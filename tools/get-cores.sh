@@ -60,6 +60,21 @@ case "$TARGET" in
     cp -r "$CACHE/zeptun-android/jniLibs/." "$jni/"
     find "$jni" -name '*.so' -exec chmod +x {} +
     ;;
+  windows)
+    bin="$ROOT/desktop/src/main/resources/bin/windows"
+    mkdir -p "$bin"
+    cp "$(fetch xray xray-windows.exe)" "$bin/xray.exe"
+    cp "$(fetch xray libcronet.dll)" "$bin/libcronet.dll"
+    unpack "$(fetch zeptun zeptun-windows-x86_64.zip)" "$CACHE/zeptun-windows"
+    for f in zeptun.exe wintun.dll wintun-LICENSE.txt; do pick "$CACHE/zeptun-windows" "$f" "$bin/$f"; done
+    unpack "$(fetch hev hev-windows.zip)" "$CACHE/hev-windows"
+    for f in hev-socks5-tunnel.exe msys-2.0.dll; do pick "$CACHE/hev-windows" "$f" "$bin/$f"; done
+    cp "$(fetch dns-tunnels zeddns-windows.exe)" "$bin/zeddns.exe"
+    cp "$(fetch dns-tunnels masterdns-windows.exe)" "$bin/masterdns.exe"
+    cp "$(fetch psiphon psiphon-windows.exe)" "$bin/psiphon.exe"
+    unpack "$(fetch openconnect openconnect-windows.zip)" "$bin/openconnect"
+    tor_tree "$(fetch tor tor-windows.zip)" "$bin/tor"
+    ;;
   *)
     echo "unknown target $TARGET" >&2
     exit 1
