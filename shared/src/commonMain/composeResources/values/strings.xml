@@ -300,11 +300,11 @@
     <string name="mode_proxy_explained_body">Runs the local SOCKS proxy (and HTTP, if enabled) without a tunnel. Only apps you point at the port are routed. Works with Xray, Psiphon, Tor, SSH, DNSTT, VayDNS and MasterDNS; sing-box, OpenConnect, IKEv2 and chains always run as a VPN.</string>
 
     <string name="mode_system_proxy">System proxy</string>
-    <string name="mode_system_proxy_body">Sets the system proxy on GNOME, KDE, Windows or macOS. Browsers and most apps follow it, and no administrator rights are needed. This is the default.</string>
+    <string name="mode_system_proxy_body">Sets the system proxy on Windows. Browsers and most apps follow it, and no administrator rights are needed. This is the default.</string>
     <string name="mode_socks">SOCKS only</string>
     <string name="mode_socks_body">Only opens a local SOCKS and HTTP proxy on 127.0.0.1 and changes nothing else. Point each app at it yourself.</string>
     <string name="mode_tun">TUN (VPN)</string>
-    <string name="mode_tun_body">Sends every app through a virtual network adapter, including apps that ignore the system proxy. Asks for administrator rights once each time ZedSecure runs. On Windows and macOS, Tor and Psiphon, and chains that start with them, keep using the system proxy.</string>
+    <string name="mode_tun_body">Sends every app through a virtual network adapter, including apps that ignore the system proxy. Asks for administrator rights once each time ZedSecure runs. On Windows, Tor and Psiphon, and chains that start with them, keep using the system proxy.</string>
     <string name="mode_tun_system_proxy">Also set the system proxy</string>
     <string name="mode_tun_system_proxy_sum">Apps that read the system proxy, such as Chrome, use the same connection while the tunnel is up. It is cleared when you disconnect.</string>
     <string name="tray_server">Server</string>
@@ -315,7 +315,6 @@
     <string name="tray_hide">Hide window</string>
     <string name="tray_quit">Quit ZedSecure</string>
     <string name="tray_missing_minimized">Still connected. This desktop has no tray, so ZedSecure was minimized instead. Disconnect first to quit.</string>
-    <string name="tray_missing_gnome">On GNOME, the AppIndicator extension adds the tray icon.</string>
     <string name="group_all">All</string>
     <string name="group_manual">Manual</string>
 
@@ -506,7 +505,6 @@
     <string name="tun_engine_zeptun">zeptun (recommended)</string>
     <string name="tun_engine_hev">hev-socks5-tunnel</string>
     <string name="tun_engine_zeptun_default">zeptun (default)</string>
-    <string name="tun_engine_sub_mac">zeptun is the default on macOS. If VPN mode makes this Mac hot or slow, switch to hev.</string>
     <string name="tun_engine_sub">What turns the packets Android sends into the tunnel back into proxied connections. zeptun keeps warm connections ready and bounds its own memory; the older engine is here in case a device disagrees.</string>
     <string name="tun_engine_hev_default">hev-socks5-tunnel (default)</string>
     <string name="tun_engine_sub_desktop">hev is the default on Windows. zeptun also blocks DNS that tries to leave outside the tunnel through the Windows firewall; switch to it if hev does not work on this PC.</string>
@@ -1451,7 +1449,6 @@
     <string name="rendering_software">Software</string>
     <string name="rendering_sub_auto_gpu">Automatic: the graphics card draws the window on this computer. Changes apply after a restart.</string>
     <string name="rendering_sub_auto_windows">Automatic: software rendering, because some Windows graphics drivers draw this window without text, with flicker or not at all. Changes apply after a restart.</string>
-    <string name="rendering_sub_auto_nvidia">Automatic: software rendering, because NVIDIA drivers before 555 garble windows drawn by the graphics card under Wayland. Changes apply after a restart.</string>
     <string name="rendering_sub_manual">Changes apply after a restart. Choose Software if the window flickers, shows static or has no text. You can also start the app with --software-rendering or --gpu-rendering.</string>
     <string name="update_check_summary_github">Look for a newer version on GitHub</string>
     <string name="rate_title_github">ZedSecure on GitHub</string>

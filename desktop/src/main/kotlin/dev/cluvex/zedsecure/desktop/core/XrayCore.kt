@@ -124,19 +124,12 @@ class XrayCore(private val workDir: File, private val engineCgroup: String? = nu
 
 object XrayBinary {
     fun extract(workDir: File): File? {
-        val (sub, name) = when (Os.current) {
-            Os.LINUX -> "linux" to "xray"
-            Os.MACOS -> "macos" to "xray"
-            Os.WINDOWS -> "windows" to "xray.exe"
-            else -> return null
-        }
+        if (Os.current != Os.WINDOWS) return null
+        val sub = "windows"
+        val name = "xray.exe"
         val out = File(workDir, name)
         if (!BinaryInstall.install("/bin/$sub/$name", out)) return null
-        when (Os.current) {
-            Os.LINUX -> "libcronet.so"
-            Os.WINDOWS -> "libcronet.dll"
-            else -> null
-        }?.let { cronet -> BinaryInstall.install("/bin/$sub/$cronet", File(workDir, cronet), executable = false) }
+        "libcronet.dll".let { cronet -> BinaryInstall.install("/bin/$sub/$cronet", File(workDir, cronet), executable = false) }
         return out
     }
 

@@ -50,7 +50,6 @@ import dev.cluvex.zedsecure.shared.resources.tray_copy_proxy
 import dev.cluvex.zedsecure.shared.resources.tray_show
 import dev.cluvex.zedsecure.shared.resources.tray_hide
 import dev.cluvex.zedsecure.shared.resources.tray_quit
-import dev.cluvex.zedsecure.shared.resources.tray_missing_gnome
 import dev.cluvex.zedsecure.shared.resources.tray_missing_minimized
 import dev.cluvex.zedsecure.shared.resources.mode_system_proxy
 import dev.cluvex.zedsecure.shared.resources.mode_socks
@@ -146,7 +145,6 @@ fun main(args: Array<String>) {
 
     val background = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
     wireDesktopServices(configRepository, desktopSettings, background)
-    DesktopVpn.repairLeftovers()
 
     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
         while (true) {
@@ -162,25 +160,8 @@ fun main(args: Array<String>) {
 
         var nativeTrayHost by remember {
             mutableStateOf(
-                when (Os.current) {
-                    Os.LINUX -> LinuxDesktop.trayHostAvailable() && LinuxDesktop.nativeTrayLoads()
-                    Os.WINDOWS -> WindowsDesktop.nativeTrayLoads()
-                    else -> false
-                },
+                Os.current == Os.WINDOWS && WindowsDesktop.nativeTrayLoads(),
             )
-        }
-        LaunchedEffect(Unit) {
-            if (Os.current != Os.LINUX || nativeTrayHost) return@LaunchedEffect
-            repeat(TRAY_HOST_RETRIES) {
-                kotlinx.coroutines.delay(TRAY_HOST_RETRY_MS)
-                val found = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    LinuxDesktop.trayHostAvailable() && LinuxDesktop.nativeTrayLoads()
-                }
-                if (found) {
-                    nativeTrayHost = true
-                    return@LaunchedEffect
-                }
-            }
         }
         var nativeTrayFailed by remember { mutableStateOf(false) }
         val nativeTray = nativeTrayHost && !nativeTrayFailed
@@ -195,7 +176,6 @@ fun main(args: Array<String>) {
         var windowVisible by remember { mutableStateOf(true) }
         var raiseWindow by remember { mutableStateOf(0) }
         val noTrayNotice = stringResource(Res.string.tray_missing_minimized)
-        val noTrayGnomeHint = stringResource(Res.string.tray_missing_gnome)
         var noTrayNoticeShown by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) {
             SingleInstance.showRequests.collect {
@@ -266,7 +246,7 @@ fun main(args: Array<String>) {
                     when {
                         !nativeTray -> trayState.sendNotification(it)
                         Os.current == Os.WINDOWS -> WindowsDesktop.notify(it.title, it.message)
-                        else -> LinuxDesktop.notify(it.title, it.message)
+                        else -> Unit
                     }
                 }
             }
@@ -415,10 +395,6 @@ fun main(args: Array<String>) {
                         if (!noTrayNoticeShown) {
                             noTrayNoticeShown = true
                             LogBus.append("W/Desktop there is no system tray here; the window was minimized because a connection is open")
-                            if (Os.current == Os.LINUX) {
-                                val gnome = System.getenv("XDG_CURRENT_DESKTOP").orEmpty().contains("GNOME", ignoreCase = true)
-                                LinuxDesktop.notify("ZedSecure", if (gnome) "$noTrayNotice $noTrayGnomeHint" else noTrayNotice)
-                            }
                         }
                     }
                     else -> { DesktopVpn.shutdown(); exitApplication() }
@@ -501,7 +477,7 @@ fun main(args: Array<String>) {
                             }
                             AdminPasswordDialog(
                                 request.retry,
-                                offerRemember = dev.cluvex.zedsecure.desktop.core.Os.current == dev.cluvex.zedsecure.desktop.core.Os.LINUX,
+                                offerRemember = false,
                             ) { AdminPassword.answer(request, it) }
                         }
                     }

@@ -16,34 +16,14 @@ class DesktopIkev2(
         return when (profile.effectiveAuth) {
             Ikev2Auth.CERTIFICATE, Ikev2Auth.EAP_TLS ->
                 fail("Certificate sign-in lives in Android's key store; use a username and password or a pre-shared key on the desktop")
-            else -> when (os) {
-                Os.WINDOWS -> windows()
-                Os.LINUX -> linux()
-                Os.MACOS -> mac()
-                Os.OTHER -> fail("IKEv2 is not available on this system")
-            }
+            else -> if (os == Os.WINDOWS) windows() else fail("IKEv2 is not available on this system")
         }
     }
 
     fun disconnect() {
-        when (os) {
-            Os.WINDOWS -> exec("rasdial", NAME, "/disconnect", timeoutSec = 20)
-            Os.LINUX -> {
-                exec("nmcli", "connection", "down", "id", NAME, timeoutSec = 20)
-                forgetLinuxProfile()
-            }
-            Os.MACOS -> exec("scutil", "--nc", "stop", NAME, timeoutSec = 20)
-            Os.OTHER -> Unit
-        }
+        if (os == Os.WINDOWS) exec("rasdial", NAME, "/disconnect", timeoutSec = 20)
     }
-
-    fun isUp(): Boolean = when (os) {
-        Os.WINDOWS -> exec("rasdial", timeoutSec = 10).second.lineSequence().any { it.trim() == NAME }
-        Os.LINUX -> exec("nmcli", "-t", "-f", "NAME", "connection", "show", "--active", timeoutSec = 10)
-            .second.lineSequence().any { it.trim() == NAME }
-        Os.MACOS -> exec("scutil", "--nc", "status", NAME, timeoutSec = 10).second.lineSequence().firstOrNull()?.trim() == "Connected"
-        Os.OTHER -> false
-    }
+    fun isUp(): Boolean = os == Os.WINDOWS && exec("rasdial", timeoutSec = 10).second.lineSequence().any { it.trim() == NAME }
 
     private fun windows(): Result<Unit> {
         if (profile.effectiveAuth == Ikev2Auth.PSK) {
@@ -100,91 +80,6 @@ class DesktopIkev2(
         13806, 13832 -> "The server's certificate does not match its address or remote ID"
         13868 -> "The server refused Windows' encryption settings; set the IKE and ESP proposals in the profile"
         else -> "IKEv2 failed (rasdial $code): " + output.lineSequence().map { it.trim() }.lastOrNull { it.isNotEmpty() }.orEmpty()
-    }
-
-    private fun linux(): Result<Unit> {
-        if (!onPath("nmcli")) return fail("IKEv2 on Linux needs NetworkManager (nmcli)")
-        if (STRONGSWAN_PLUGIN.none { File(it).isFile }) {
-            return fail("Install NetworkManager-strongswan (network-manager-strongswan) to use IKEv2")
-        }
-        val store = File(System.getProperty("user.home"), ".local/share/zedsecure").apply { mkdirs() }
-        val ca = caFile(store, "ikev2-ca.pem", der = false)
-        val secret = if (profile.effectiveAuth == Ikev2Auth.PSK) profile.plainPsk() else profile.plainPassword()
-        if (secret.any { it == '\n' || it == '\r' } || secret.lastOrNull()?.isWhitespace() == true) {
-            return fail("NetworkManager cannot take a password that ends with a space or has a line break")
-        }
-        exec("nmcli", "connection", "delete", "id", NAME, timeoutSec = 20)
-        val added = exec(*linuxAddCommand(ca).toTypedArray(), timeoutSec = 30)
-        if (added.first != 0) return fail("NetworkManager refused the IKEv2 connection: ${added.second.trim()}")
-        val stored = execWithEnv(
-            listOf("nmcli", "connection", "edit", "id", NAME),
-            emptyMap(),
-            timeoutSec = 30,
-            input = "set vpn.secrets password=${nmcliEscape(secret)}\nsave persistent\nquit\n",
-        )
-        if (stored.first != 0) {
-            forgetLinuxProfile()
-            return fail("NetworkManager did not keep the IKEv2 password: ${stored.second.trim().lineSequence().lastOrNull().orEmpty()}")
-        }
-        val up = exec("nmcli", "connection", "up", "id", NAME, timeoutSec = 90)
-        if (up.first != 0) {
-            forgetLinuxProfile()
-            return fail("IKEv2 did not connect: ${up.second.trim().lineSequence().firstOrNull { it.startsWith("Error") } ?: up.second.trim().lineSequence().lastOrNull().orEmpty()}")
-        }
-        return Result.success(Unit)
-    }
-
-    private fun forgetLinuxProfile() {
-        exec("nmcli", "connection", "delete", "id", NAME, timeoutSec = 20)
-    }
-
-    internal fun linuxAddCommand(ca: File?): List<String> {
-        val psk = profile.effectiveAuth == Ikev2Auth.PSK
-        val data = buildList {
-            add("address=${profile.server.trim()}")
-            add("method=${if (psk) "psk" else "eap"}")
-            if (!psk) add("user=${profile.username}")
-            add("virtual=yes")
-            add("encap=no")
-            add("ipcomp=no")
-            add("password-flags=0")
-            ca?.let { add("certificate=${it.absolutePath}") }
-            profile.remoteId.takeIf { it.isNotBlank() }?.let { add("remote-identity=${it.trim()}"); add("server-id=${it.trim()}") }
-            profile.localId.takeIf { it.isNotBlank() }?.let { add("local-identity=${it.trim()}") }
-            if (profile.ikeProposal.isNotBlank() || profile.espProposal.isNotBlank()) {
-                add("proposal=yes")
-                if (profile.ikeProposal.isNotBlank()) add("ike=${profile.ikeProposal.trim()}")
-                if (profile.espProposal.isNotBlank()) add("esp=${profile.espProposal.trim()}")
-            }
-        }.joinToString(", ")
-        return listOf(
-            "nmcli", "connection", "add", "type", "vpn", "con-name", NAME, "ifname", "*",
-            "vpn-type", "strongswan", "vpn.data", data, "connection.autoconnect", "no",
-        )
-    }
-
-    internal fun nmcliEscape(value: String): String = buildString {
-        for (c in value) {
-            if (c == '\\' || c == ',' || c.isWhitespace()) append('\\')
-            append(c)
-        }
-    }
-
-    private fun mac(): Result<Unit> {
-        val installed = exec("scutil", "--nc", "list", timeoutSec = 10).second.contains("\"$NAME\"")
-        if (!installed) {
-            val config = File(workDir.also { it.mkdirs() }, "ZedSecure-IKEv2.mobileconfig").apply { writeText(macProfile()) }
-            exec("open", config.absolutePath, timeoutSec = 20)
-            return fail("Install the ZedSecure IKEv2 profile in System Settings › Privacy & Security › Profiles, then connect again")
-        }
-        val started = exec("scutil", "--nc", "start", NAME, timeoutSec = 20)
-        if (started.first != 0) return fail("macOS did not start IKEv2: ${started.second.trim()}")
-        repeat(30) {
-            if (isUp()) return Result.success(Unit)
-            Thread.sleep(1_000)
-        }
-        exec("scutil", "--nc", "stop", NAME, timeoutSec = 10)
-        return fail("IKEv2 did not connect in 30 seconds")
     }
 
     internal fun macProfile(): String {

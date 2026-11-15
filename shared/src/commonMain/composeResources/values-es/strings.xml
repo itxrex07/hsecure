@@ -294,7 +294,6 @@
     <string name="tray_hide">Ocultar ventana</string>
     <string name="tray_quit">Salir de ZedSecure</string>
     <string name="tray_missing_minimized">La conexión sigue activa. Este escritorio no tiene bandeja del sistema, así que ZedSecure se minimizó. Desconecta primero para salir.</string>
-    <string name="tray_missing_gnome">En GNOME, la extensión AppIndicator añade el icono de la bandeja.</string>
     <string name="group_all">Todos</string>
     <string name="group_manual">Manual</string>
     <string name="about_version">Versión %1$s</string>
@@ -478,7 +477,6 @@
     <string name="tun_engine_zeptun">zeptun (recomendado)</string>
     <string name="tun_engine_hev">hev-socks5-tunnel</string>
     <string name="tun_engine_zeptun_default">zeptun (predeterminado)</string>
-    <string name="tun_engine_sub_mac">zeptun es el motor predeterminado en macOS. Si el modo VPN calienta o ralentiza tu Mac, cambia a hev.</string>
     <string name="tun_engine_sub">Lo que convierte los paquetes que Android envía al túnel en conexiones a través del proxy. zeptun mantiene conexiones listas de antemano y limita su propia memoria; el motor anterior sigue aquí por si zeptun no funciona bien en algún dispositivo.</string>
     <string name="tun_engine_hev_default">hev-socks5-tunnel (predeterminado)</string>
     <string name="tun_engine_sub_desktop">hev es el motor predeterminado en Windows. zeptun además usa el firewall de Windows para bloquear el DNS que intenta salir por fuera del túnel; cambia a zeptun si hev no funciona en este equipo.</string>
@@ -1405,7 +1403,6 @@
     <string name="rendering_software">Software</string>
     <string name="rendering_sub_auto_gpu">Automático: la tarjeta gráfica dibuja la ventana en este equipo. Los cambios se aplican tras reiniciar.</string>
     <string name="rendering_sub_auto_windows">Automático: renderizado por software, porque algunos controladores gráficos de Windows dibujan esta ventana sin texto, con parpadeo o no la dibujan. Los cambios se aplican tras reiniciar.</string>
-    <string name="rendering_sub_auto_nvidia">Automático: renderizado por software, porque los controladores de NVIDIA anteriores a la 555 corrompen las ventanas que dibuja la tarjeta gráfica en Wayland. Los cambios se aplican tras reiniciar.</string>
     <string name="rendering_sub_manual">Los cambios se aplican tras reiniciar. Elige Software si la ventana parpadea, muestra ruido o no tiene texto. También puedes iniciar la app con --software-rendering o --gpu-rendering.</string>
     <string name="update_check_summary_github">Buscar una versión más reciente en GitHub</string>
     <string name="rate_title_github">ZedSecure en GitHub</string>

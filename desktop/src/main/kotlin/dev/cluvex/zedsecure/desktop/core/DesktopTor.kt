@@ -29,11 +29,6 @@ class DesktopTor(
         val builder = ProcessBuilder(command)
             .redirectErrorStream(true)
             .directory(home)
-        when (Os.current) {
-            Os.LINUX -> builder.environment()["LD_LIBRARY_PATH"] = root.absolutePath
-            Os.MACOS -> builder.environment()["DYLD_LIBRARY_PATH"] = root.absolutePath
-            else -> Unit
-        }
         val started = try {
             EngineCgroup.start(builder, engineCgroup)
         } catch (e: Exception) {

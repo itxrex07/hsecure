@@ -76,10 +76,6 @@ object DesktopGeoAssets : GeoAssets {
 
     private fun dataDir(): File {
         val home = System.getProperty("user.home")
-        return when (Os.current) {
-            Os.WINDOWS -> File(System.getenv("APPDATA") ?: "$home\\AppData\\Roaming", "ZedSecure")
-            Os.MACOS -> File("$home/Library/Application Support/ZedSecure")
-            else -> File(System.getenv("XDG_DATA_HOME")?.takeIf { it.isNotBlank() } ?: "$home/.local/share", "zedsecure")
-        }
+        return File(System.getenv("APPDATA") ?: "${home}\\AppData\\Roaming", "ZedSecure")
     }
 }

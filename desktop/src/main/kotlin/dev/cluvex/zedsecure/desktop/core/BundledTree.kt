@@ -4,12 +4,8 @@ import java.io.File
 
 internal object BundledTree {
     fun extract(destination: File, name: String): File? {
-        val sub = when (Os.current) {
-            Os.LINUX -> "linux"
-            Os.MACOS -> "macos"
-            Os.WINDOWS -> "windows"
-            else -> return null
-        }
+        if (Os.current != Os.WINDOWS) return null
+        val sub = "windows"
         val base = "/bin/$sub/$name"
         val index = BundledTree::class.java.getResourceAsStream("$base/files.txt") ?: run {
             System.err.println("bundled $name not found: $base")

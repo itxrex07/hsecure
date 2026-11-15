@@ -1,15 +1,9 @@
 package dev.cluvex.zedsecure.desktop.core
 
-enum class Os { LINUX, WINDOWS, MACOS, OTHER;
+enum class Os { WINDOWS, OTHER;
     companion object {
         val current: Os by lazy {
-            val n = System.getProperty("os.name")?.lowercase().orEmpty()
-            when {
-                n.contains("linux") -> LINUX
-                n.contains("win") -> WINDOWS
-                n.contains("mac") || n.contains("darwin") -> MACOS
-                else -> OTHER
-            }
+            if (System.getProperty("os.name")?.lowercase().orEmpty().contains("win")) WINDOWS else OTHER
         }
     }
 }

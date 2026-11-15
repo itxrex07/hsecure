@@ -36,7 +36,7 @@ class ZeptunTun(
         appendLine("udp_mode = \"${if (udpOverTcp) "tcp" else "udp"}\"")
         appendLine()
         appendLine("[handler.direct]")
-        appendLine("bind_interface = \"${if (os == Os.MACOS) "lo0" else "loopback"}\"")
+        appendLine("bind_interface = \"loopback\"")
         appendLine()
         appendLine("[route]")
         appendLine("auto_route = true")
@@ -54,11 +54,7 @@ class ZeptunTun(
         appendLine("upstream = \"${dnsUpstream(dnsServers)}\"")
     }
 
-    override fun start(): Boolean = when (os) {
-        Os.WINDOWS -> startWindows()
-        Os.MACOS -> startMac()
-        else -> false
-    }
+    override fun start(): Boolean = if (os == Os.WINDOWS) startWindows() else false
 
     private fun stage(): Pair<File, File>? {
         val dir = runCatching { Files.createTempDirectory(workDir.also { it.mkdirs() }.toPath(), "tun-").toFile() }
@@ -99,17 +95,7 @@ class ZeptunTun(
         return true
     }
 
-    private fun startMac(): Boolean {
-        val up = MacTunHelper.up(workDir, zeptun, toml())
-        if (!up) MacTunHelper.lastLog().forEach { println("[zeptun] $it") }
-        return up
-    }
-
     override fun stop() {
-        if (os == Os.MACOS) {
-            MacTunHelper.down()
-            return
-        }
         if (state == null) return
         if (windowsUp) WindowsElevation.tunDown()
         windowsUp = false
@@ -131,8 +117,6 @@ class ZeptunTun(
         const val TUN_V6 = "fdfe:dcba:9876::1"
         const val DEFAULT_DNS = "1.1.1.1"
         const val ADAPTER_GUID = "7E2B5D41-0C9A-4F3E-8B6D-2A91C4E7F053"
-        const val MAC_TUN_DNS = "172.19.0.2"
-        const val MAC_DNS_RESTORE = "/Library/Application Support/ZedSecure/dns-restore"
         private const val LOG_TAIL = 40
 
         private val IPV4 = Regex("""^\d{1,3}(\.\d{1,3}){3}$""")

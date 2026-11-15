@@ -112,7 +112,7 @@ interface Platform {
     }
 }
 
-enum class AutomaticRendering { Gpu, SoftwareWindows, SoftwareNvidiaWayland }
+enum class AutomaticRendering { Gpu, SoftwareWindows }
 
 interface AdminAccess {
     val remembered: Boolean

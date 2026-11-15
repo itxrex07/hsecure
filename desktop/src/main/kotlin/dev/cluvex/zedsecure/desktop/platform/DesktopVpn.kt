@@ -171,7 +171,7 @@ object DesktopVpn {
     private fun startTor(name: String) {
         VpnManager.onStarting(name)
         thread(name = "desktop-tor") {
-            val engine = DesktopTor(settingsProvider(), work, engineCgroup = engineCgroupForTun(), socksPort = localPort(LocalPorts.TOR_SOCKS))
+            val engine = DesktopTor(settingsProvider(), work, engineCgroup = null, socksPort = localPort(LocalPorts.TOR_SOCKS))
             tor = engine
             var reported = -1
             val started = engine.start(onProgress = { pct ->
@@ -200,7 +200,7 @@ object DesktopVpn {
         thread(name = "desktop-psiphon") {
             val socksPort = localPort(LocalPorts.PSIPHON_SOCKS)
             val httpPort = localPort(LocalPorts.PSIPHON_HTTP, setOf(socksPort))
-            val engine = DesktopPsiphon(profile, work, socksPort, httpPort, engineCgroup = engineCgroupForTun())
+            val engine = DesktopPsiphon(profile, work, socksPort, httpPort, engineCgroup = null)
             psiphon = engine
             val started = engine.start(onNotice = { notice ->
                 if (notice.type == "ConnectedServerRegion") {
@@ -385,12 +385,12 @@ object DesktopVpn {
         outer.psiphonSettings()?.let { psiphonProfile ->
             val socks = localPort(LocalPorts.PSIPHON_SOCKS)
             val http = localPort(LocalPorts.PSIPHON_HTTP, setOf(socks))
-            val engine = DesktopPsiphon(psiphonProfile, work, socks, http, engineCgroup = engineCgroupForTun())
+            val engine = DesktopPsiphon(psiphonProfile, work, socks, http, engineCgroup = null)
             outerPsiphon = engine
             return if (engine.start().isSuccess) socks else -1
         }
         if (outer.isTor) {
-            val engine = DesktopTor(settingsProvider(), work, engineCgroup = engineCgroupForTun(), socksPort = localPort(LocalPorts.TOR_SOCKS))
+            val engine = DesktopTor(settingsProvider(), work, engineCgroup = null, socksPort = localPort(LocalPorts.TOR_SOCKS))
             outerTor = engine
             return if (engine.start(onProgress = { LogBus.append("I/Tor bootstrapped $it%") }).isSuccess) engine.socksPort else -1
         }
@@ -621,23 +621,6 @@ object DesktopVpn {
             }
         }
 
-    private fun engineCgroupForTun(): String? {
-        if (runMode != RunMode.Vpn || Os.current != Os.LINUX) return null
-        engineCgroup?.let { return it }
-        return (EngineCgroup.create() ?: rootCgroup()).also { created ->
-            engineCgroup = created
-            if (created == null) LogBus.append("W/Desktop could not give the engine its own cgroup here; VPN mode will use the system proxy for it")
-        }
-    }
-
-    private fun rootCgroup(): String? {
-        if (!dev.cluvex.zedsecure.desktop.core.LinuxBroker.ensure(work, AdminPassword::ask)) return null
-        return dev.cluvex.zedsecure.desktop.core.LinuxBroker.engineCgroup()
-            .onFailure { LogBus.append("W/Desktop ${it.message}") }
-            .getOrNull()
-            ?.also { LogBus.append("I/Desktop the root helper keeps the engine in its own cgroup") }
-    }
-
     private fun route(
         socksPort: Int,
         bypassIps: List<String>,
@@ -654,19 +637,12 @@ object DesktopVpn {
             if (tunCarries == CHAIN) LogBus.append("I/Desktop VPN mode needs a chain whose first hop is Xray, SSH or a DNS tunnel")
         }
         val useTun = runMode == RunMode.Vpn && tunCarries == null
-        if (useTun && !TunMode.supported()) {
-            LogBus.append("W/Desktop VPN mode is not available on ${Os.current} yet; using the system proxy")
-        }
         if (useTun && TunMode.supported()) {
             LogBus.append("I/Desktop TUN bypass: ${bypassIps.joinToString().ifEmpty { "(none)" }}")
             excludeCgroup?.let { LogBus.append("I/Desktop the engine runs outside the tunnel from its own cgroup") }
             val settings = settingsProvider()
             val engine = TunMode.Factory.create(
-                work, socksPort, bypassIps, udpOverTcp, settings.vpnDns, AdminPassword::ask,
-                allowApps = listOf("xray.exe", "zeddns.exe").map { File(work, it) }.filter { it.isFile },
-                zeptunOnWindows = settings.useZepTun,
-                hevOnMac = settings.useHevOnMac,
-                excludeCgroup = excludeCgroup,
+                work, socksPort, bypassIps, udpOverTcp, settings.vpnDns, AdminPassword::ask
             )
             if (engine != null && engine.start()) {
                 tun = engine
@@ -741,23 +717,7 @@ object DesktopVpn {
 
     fun shutdown() {
         teardown()
-        dev.cluvex.zedsecure.desktop.core.LinuxBroker.close()
         dev.cluvex.zedsecure.desktop.core.WindowsElevation.close()
-        dev.cluvex.zedsecure.desktop.core.MacTunHelper.close()
-    }
-
-    fun repairLeftovers() {
-        if (Os.current != Os.MACOS || !dev.cluvex.zedsecure.desktop.core.MacTunHelper.dnsLeftBehind) return
-        thread(name = "desktop-repair") {
-            val repaired = dev.cluvex.zedsecure.desktop.core.MacTunHelper.repair(
-                work,
-                dev.cluvex.zedsecure.desktop.core.ZeptunBinary.extract(work),
-            )
-            LogBus.append(
-                if (repaired) "I/Desktop the DNS settings an earlier tunnel left behind are back to normal"
-                else "W/Desktop the DNS settings an earlier tunnel left behind could not be put back yet",
-            )
-        }
     }
 
     private fun tunnelLost() {
@@ -771,7 +731,6 @@ object DesktopVpn {
     }
 
     init {
-        dev.cluvex.zedsecure.desktop.core.LinuxBroker.onTunLost = { tunnelLost() }
         dev.cluvex.zedsecure.desktop.core.WindowsElevation.onLost = { what -> if (what == "tun") tunnelLost() }
     }
 
@@ -802,7 +761,6 @@ object DesktopVpn {
         outerTor?.let { outerTor = null; it.stop() }
         outerSsh?.let { outerSsh = null; it.stop() }
         outerDns?.let { outerDns = null; it.stop() }
-        engineCgroup?.let { engineCgroup = null; EngineCgroup.remove(it) }
         if (lanOpen) {
             lanOpen = false
             dev.cluvex.zedsecure.desktop.core.WindowsElevation.closeLan()

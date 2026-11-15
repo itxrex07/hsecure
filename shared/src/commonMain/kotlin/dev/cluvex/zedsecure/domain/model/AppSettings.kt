@@ -322,7 +322,6 @@ data class AppSettings(
 
     val useZepTun: Boolean = false,
 
-    val useHevOnMac: Boolean = false,
     val hevTunLogLevel: HevLogLevel = HevLogLevel.Warn,
 
     val hevTunRwTimeout: String = "300,60",

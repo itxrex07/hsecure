@@ -83,12 +83,9 @@ class DesktopDnsTunnel(
     }
 
     private fun extract(base: String): File? {
-        val (sub, name) = when (Os.current) {
-            Os.LINUX -> "linux" to base
-            Os.MACOS -> "macos" to base
-            Os.WINDOWS -> "windows" to "$base.exe"
-            else -> return null
-        }
+        if (Os.current != Os.WINDOWS) return null
+        val sub = "windows"
+        val name = "$base.exe"
         val stream = javaClass.getResourceAsStream("/bin/$sub/$name") ?: return null
         val out = File(workDir, name)
         stream.use { input -> out.outputStream().use { input.copyTo(it) } }

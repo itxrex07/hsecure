@@ -79,27 +79,16 @@ compose.desktop {
         mainClass = "dev.cluvex.zedsecure.desktop.GuiKt"
         jvmArgs += listOf("-XX:TieredStopAtLevel=1")
         nativeDistributions {
-            targetFormats(TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.AppImage, TargetFormat.Msi, TargetFormat.Dmg)
+            targetFormats(TargetFormat.Msi)
             modules("java.net.http", "jdk.localedata")
             packageName = "ZedSecure"
             packageVersion = zedVersion
             description = "ZedSecure VPN client"
             vendor = "Cluvex Studio"
-            linux {
-                iconFile.set(project.file("icons/zedsecure.png"))
-                packageName = "zedsecure"
-                menuGroup = "Network"
-                shortcut = true
-            }
             windows {
                 iconFile.set(project.file("icons/zedsecure.ico"))
                 menuGroup = "ZedSecure"
                 shortcut = true
-            }
-            macOS {
-                iconFile.set(project.file("icons/zedsecure.icns"))
-                bundleID = "dev.cluvex.zedsecure"
-                minimumSystemVersion = "12.0"
             }
         }
     }

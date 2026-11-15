@@ -11,17 +11,14 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.MenuScope
 import com.kdroid.composetray.menu.api.TrayMenuBuilder
-import com.kdroid.composetray.tray.impl.LinuxTrayInitializer
 import com.kdroid.composetray.tray.impl.WindowsTrayInitializer
 import dev.cluvex.zedsecure.desktop.core.Os
-import dev.cluvex.zedsecure.desktop.core.exec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.imageio.ImageIO
-import kotlin.concurrent.thread
 
 sealed interface TrayEntry {
     data class Action(val label: String, val enabled: Boolean = true, val onClick: () -> Unit = {}) : TrayEntry
@@ -58,7 +55,6 @@ fun String.trayText(): String =
     filterNot { it.isSurrogate() || it == '\uFE0F' || it == '\u200D' }.replace(Regex("[ \\t]{2,}"), " ").trim()
 
 private const val TRAY_ID = "zedsecure"
-private const val LINUX_TRAY_PX = 64
 private val WINDOWS_ICON_SIZES = listOf(16, 20, 24, 32, 40, 48, 64)
 
 private fun List<TrayEntry>.signature(): String = joinToString("|") { entry ->
@@ -72,7 +68,7 @@ private fun List<TrayEntry>.signature(): String = joinToString("|") { entry ->
 
 private fun trayPng(key: String, icon: Painter): String {
     val file = File(System.getProperty("java.io.tmpdir"), "zedsecure-tray-$key.png")
-    ImageIO.write(render(icon, LINUX_TRAY_PX), "png", file)
+    ImageIO.write(render(icon, 64), "png", file)
     return file.absolutePath
 }
 
@@ -139,33 +135,20 @@ fun NativeTray(
     onFailure: () -> Unit,
     entries: List<TrayEntry>,
 ) {
-    val windows = Os.current == Os.WINDOWS
-    val iconPath = remember(iconKey) { if (windows) trayIco(iconKey, icon) else trayPng(iconKey, icon) }
+    val iconPath = remember(iconKey) { trayIco(iconKey, icon) }
     DisposableEffect(Unit) {
-        onDispose {
-            runCatching { if (windows) WindowsTrayInitializer.dispose(TRAY_ID) else LinuxTrayInitializer.dispose(TRAY_ID) }
-        }
+        onDispose { runCatching { WindowsTrayInitializer.dispose(TRAY_ID) } }
     }
     LaunchedEffect(iconPath, tooltip, entries.signature()) {
         withContext(Dispatchers.IO) {
             runCatching {
-                if (windows) {
-                    WindowsTrayInitializer.initialize(
-                        TRAY_ID,
-                        iconPath,
-                        tooltip.trayText(),
-                        onLeftClick = onOpen,
-                        menuContent = { nativeEntries(entries) },
-                    )
-                } else {
-                    LinuxTrayInitializer.initialize(
-                        TRAY_ID,
-                        iconPath,
-                        tooltip.trayText(),
-                        onLeftClick = onOpen,
-                        menuContent = { nativeEntries(entries) },
-                    )
-                }
+                WindowsTrayInitializer.initialize(
+                    TRAY_ID,
+                    iconPath,
+                    tooltip.trayText(),
+                    onLeftClick = onOpen,
+                    menuContent = { nativeEntries(entries) },
+                )
             }.onFailure {
                 System.err.println("tray: ${it.message}")
                 onFailure()
@@ -183,42 +166,5 @@ object WindowsDesktop {
 
     fun notify(title: String, body: String) {
         System.err.println("notice: $title: $body")
-    }
-}
-
-object LinuxDesktop {
-    fun nativeTrayLoads(): Boolean = runCatching {
-        Class.forName(NATIVE_TRAY_BRIDGE, true, LinuxTrayInitializer::class.java.classLoader)
-    }.onFailure { System.err.println("tray: native tray unavailable: ${it.message ?: it}") }.isSuccess
-
-    private const val NATIVE_TRAY_BRIDGE = "com.kdroid.composetray.lib.linux.LinuxNativeBridge"
-
-    fun trayHostAvailable(): Boolean {
-        val gdbus = exec(
-            "gdbus", "call", "--session",
-            "--dest", "org.freedesktop.DBus",
-            "--object-path", "/org/freedesktop/DBus",
-            "--method", "org.freedesktop.DBus.NameHasOwner", "org.kde.StatusNotifierWatcher",
-            timeoutSec = 5,
-        )
-        if (gdbus.first == 0) return "true" in gdbus.second
-        val dbusSend = exec(
-            "dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.DBus", "/org/freedesktop/DBus",
-            "org.freedesktop.DBus.NameHasOwner", "string:org.kde.StatusNotifierWatcher",
-            timeoutSec = 5,
-        )
-        if (dbusSend.first == 0) return "boolean true" in dbusSend.second
-        val busctl = exec(
-            "busctl", "--user", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
-            "org.freedesktop.DBus", "NameHasOwner", "s", "org.kde.StatusNotifierWatcher",
-            timeoutSec = 5,
-        )
-        return busctl.first == 0 && "b true" in busctl.second
-    }
-
-    fun notify(title: String, body: String) {
-        thread(name = "desktop-notify", isDaemon = true) {
-            exec("notify-send", "--app-name=ZedSecure", "--icon=network-vpn", title, body, timeoutSec = 5)
-        }
     }
 }

@@ -433,7 +433,6 @@
     <string name="tray_hide">پنهان کردن پنجره</string>
     <string name="tray_quit">خروج از ZedSecure</string>
     <string name="tray_missing_minimized">هنوز وصله. این دسکتاپ tray نداره، برای همین ZedSecure کوچک شد. برای خروج اول قطع کن.</string>
-    <string name="tray_missing_gnome">روی GNOME، افزونه‌ی AppIndicator آیکون tray رو اضافه می‌کنه.</string>
     <string name="option_none">هیچ‌کدام</string>
 
     <string name="title_ui_settings">رابط کاربری</string>
@@ -501,7 +500,6 @@
     <string name="tun_engine_zeptun">zeptun (پیشنهادی)</string>
     <string name="tun_engine_hev">hev-socks5-tunnel</string>
     <string name="tun_engine_zeptun_default">zeptun (پیش‌فرض)</string>
-    <string name="tun_engine_sub_mac">zeptun روی macOS پیش‌فرض است. اگر حالت VPN این مک را داغ یا کند می‌کند، به hev تغییر دهید.</string>
     <string name="tun_engine_sub">چیزی که بسته‌های اندروید را به اتصال‌های پروکسی‌شده تبدیل می‌کند. zeptun اتصال‌های آماده نگه می‌دارد و مصرف حافظه‌اش کران‌دار است؛ موتور قدیمی برای وقتی است که دستگاهی با آن مشکل داشته باشد.</string>
     <string name="tun_engine_hev_default">hev-socks5-tunnel (پیش‌فرض)</string>
     <string name="tun_engine_sub_desktop">روی ویندوز hev پیش‌فرض است. zeptun با فایروال ویندوز جلوی DNSهایی را هم که بیرون از تونل می‌روند می‌گیرد؛ اگر hev روی این کامپیوتر کار نکرد، آن را انتخاب کنید.</string>
@@ -1444,7 +1442,6 @@
     <string name="rendering_software">نرم‌افزاری</string>
     <string name="rendering_sub_auto_gpu">خودکار: روی این کامپیوتر کارت گرافیک پنجره را رسم می‌کند. تغییرات بعد از اجرای دوباره اعمال می‌شوند.</string>
     <string name="rendering_sub_auto_windows">خودکار: رندر نرم‌افزاری، چون بعضی درایورهای گرافیک ویندوز این پنجره را بدون متن، با چشمک یا اصلاً رسم نمی‌کنند. تغییرات بعد از اجرای دوباره اعمال می‌شوند.</string>
-    <string name="rendering_sub_auto_nvidia">خودکار: رندر نرم‌افزاری، چون درایورهای NVIDIA قبل از ۵۵۵ زیر Wayland پنجره‌ای را که کارت گرافیک رسم می‌کند به‌هم‌ریخته و برفکی نشان می‌دهند. تغییرات بعد از اجرای دوباره اعمال می‌شوند.</string>
     <string name="rendering_sub_manual">تغییرات بعد از اجرای دوباره اعمال می‌شوند. اگر پنجره چشمک می‌زند، برفکی است یا متن ندارد، «نرم‌افزاری» را انتخاب کنید. می‌توانید برنامه را با --software-rendering یا --gpu-rendering هم اجرا کنید.</string>
     <string name="update_check_summary_github">جست‌وجوی نسخهٔ جدیدتر در گیت‌هاب</string>
     <string name="rate_title_github">ZedSecure در گیت‌هاب</string>

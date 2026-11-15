@@ -4,12 +4,9 @@ import java.io.File
 
 internal object BundledBinary {
     fun extract(workDir: File, unixName: String, windowsName: String, windowsCompanions: List<String> = emptyList()): File? {
-        val (sub, name) = when (Os.current) {
-            Os.LINUX -> "linux" to unixName
-            Os.MACOS -> "macos" to unixName
-            Os.WINDOWS -> "windows" to windowsName
-            else -> return null
-        }
+        if (Os.current != Os.WINDOWS) return null
+        val sub = "windows"
+        val name = windowsName
         val out = copy(workDir, sub, name) ?: return null
         if (Os.current == Os.WINDOWS) {
             windowsCompanions.forEach { companion ->
