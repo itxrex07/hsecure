@@ -55,12 +55,24 @@ jobs:
         run: |
           set -e
           umask 077
-          if [ "$USE_PLAY" = "true" ]; then
+          if [ "$USE_PLAY" = "true" ] && [ -n "${PLAY_KEYSTORE_BASE64:-}" ]; then
             printf '%s' "$PLAY_KEYSTORE_BASE64" | base64 -d > release.keystore
             STORE_PW="$PLAY_KEYSTORE_PASSWORD"; KEY_PW="$PLAY_KEY_PASSWORD"; ALIAS="$PLAY_KEY_ALIAS"
-          else
+            echo "Using PLAY_KEYSTORE_BASE64 signing key"
+          elif [ "$USE_PLAY" != "true" ] && [ -n "${KEYSTORE_BASE64:-}" ]; then
             printf '%s' "$KEYSTORE_BASE64" | base64 -d > release.keystore
             STORE_PW="$KEYSTORE_PASSWORD"; KEY_PW="$KEY_PASSWORD"; ALIAS="$KEY_ALIAS"
+            echo "Using KEYSTORE_BASE64 signing key"
+          else
+            echo "No signing secret configured; generating a temporary release keystore"
+            STORE_PW="changeit"; KEY_PW="changeit"; ALIAS="zedsecure"
+            keytool -genkeypair -v \
+              -keystore release.keystore \
+              -storepass "$STORE_PW" \
+              -keypass "$KEY_PW" \
+              -alias "$ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 3650 \
+              -dname "CN=ZedSecure Temporary, OU=Build, O=ZedSecure, L=Unknown, ST=Unknown, C=US"
           fi
           {
             echo "storeFile=release.keystore"
