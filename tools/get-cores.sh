@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TARGET="${1:?android, linux, windows, macos-arm64 or macos-x86_64}"
+TARGET="${1:?android or windows}"
 CACHE="${CORES_CACHE:-$ROOT/build/cores}"
 
 digest() {
@@ -59,46 +59,6 @@ case "$TARGET" in
     unpack "$(fetch zeptun zeptun-android-jniLibs.zip)" "$CACHE/zeptun-android"
     cp -r "$CACHE/zeptun-android/jniLibs/." "$jni/"
     find "$jni" -name '*.so' -exec chmod +x {} +
-    ;;
-  linux)
-    bin="$ROOT/desktop/src/main/resources/bin/linux"
-    mkdir -p "$bin"
-    cp "$(fetch xray xray-linux)" "$bin/xray"
-    cp "$(fetch xray libcronet.so)" "$bin/libcronet.so"
-    cp "$(fetch hev hev-linux)" "$bin/hev-socks5-tunnel"
-    cp "$(fetch dns-tunnels zeddns-linux)" "$bin/zeddns"
-    cp "$(fetch dns-tunnels masterdns-linux)" "$bin/masterdns"
-    cp "$(fetch psiphon psiphon-linux)" "$bin/psiphon"
-    tor_tree "$(fetch tor tor-linux.zip)" "$bin/tor"
-    chmod +x "$bin/xray" "$bin/hev-socks5-tunnel" "$bin/zeddns" "$bin/masterdns" "$bin/psiphon"
-    ;;
-  windows)
-    bin="$ROOT/desktop/src/main/resources/bin/windows"
-    mkdir -p "$bin"
-    cp "$(fetch xray xray-windows.exe)" "$bin/xray.exe"
-    cp "$(fetch xray libcronet.dll)" "$bin/libcronet.dll"
-    unpack "$(fetch zeptun zeptun-windows-x86_64.zip)" "$CACHE/zeptun-windows"
-    for f in zeptun.exe wintun.dll wintun-LICENSE.txt; do pick "$CACHE/zeptun-windows" "$f" "$bin/$f"; done
-    unpack "$(fetch hev hev-windows.zip)" "$CACHE/hev-windows"
-    for f in hev-socks5-tunnel.exe msys-2.0.dll; do pick "$CACHE/hev-windows" "$f" "$bin/$f"; done
-    cp "$(fetch dns-tunnels zeddns-windows.exe)" "$bin/zeddns.exe"
-    cp "$(fetch dns-tunnels masterdns-windows.exe)" "$bin/masterdns.exe"
-    cp "$(fetch psiphon psiphon-windows.exe)" "$bin/psiphon.exe"
-    unpack "$(fetch openconnect openconnect-windows.zip)" "$bin/openconnect"
-    tor_tree "$(fetch tor tor-windows.zip)" "$bin/tor"
-    ;;
-  macos-arm64|macos-x86_64)
-    arch=${TARGET#macos-}
-    bin="$ROOT/desktop/src/main/resources/bin/macos"
-    mkdir -p "$bin"
-    cp "$(fetch xray "xray-macos-$arch")" "$bin/xray"
-    cp "$(fetch zeptun zeptun-darwin-universal)" "$bin/zeptun"
-    cp "$(fetch dns-tunnels "zeddns-macos-$arch")" "$bin/zeddns"
-    cp "$(fetch dns-tunnels "masterdns-macos-$arch")" "$bin/masterdns"
-    cp "$(fetch psiphon "psiphon-macos-$arch")" "$bin/psiphon"
-    cp "$(fetch hev "hev-macos-$arch")" "$bin/hev-socks5-tunnel"
-    tor_tree "$(fetch tor "tor-macos-$arch.zip")" "$bin/tor"
-    chmod +x "$bin/xray" "$bin/zeptun" "$bin/zeddns" "$bin/masterdns" "$bin/psiphon" "$bin/hev-socks5-tunnel"
     ;;
   *)
     echo "unknown target $TARGET" >&2
